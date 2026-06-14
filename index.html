@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>QK-Tool | Laser Scan Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 100%);
+            font-family: 'Segoe UI', 'Poppins', sans-serif;
+            min-height: 100vh;
+            padding: 16px;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        #sakuraCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+        
+        .laser-scan {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 0, 79, 0.3) 50%, transparent 100%);
+            pointer-events: none;
+            z-index: 1000;
+            animation: laserMove 4s ease-in-out infinite;
+        }
+        
+        @keyframes laserMove {
+            0% { left: -100%; }
+            50% { left: 100%; }
+            100% { left: 200%; }
+        }
+        
+        .menu-item:hover {
+            animation: laserGlow 0.5s ease-in-out;
+            box-shadow: 0 0 20px rgba(255, 0, 79, 0.8);
+        }
+        
+        @keyframes laserGlow {
+            0% { box-shadow: 0 0 0 rgba(255, 0, 79, 0); }
+            50% { box-shadow: 0 0 30px rgba(255, 0, 79, 0.8); }
+            100% { box-shadow: 0 0 0 rgba(255, 0, 79, 0); }
+        }
+        
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .login-box {
+            background: rgba(20, 20, 40, 0.95);
+            border-radius: 30px;
+            padding: 30px 25px;
+            width: 90%;
+            max-width: 350px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: borderPulse 2s infinite;
+        }
+        
+        @keyframes borderPulse {
+            0% { border-color: rgba(255, 255, 255, 0.2); }
+            50% { border-color: #ff004f; box-shadow: 0 0 30px rgba(255,0,79,0.5); }
+            100% { border-color: rgba(255, 255, 255, 0.2); }
+        }
+        
+        .login-box h1 {
+            background: linear-gradient(45deg, #ff004f, #00f2fe);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+        
+        .login-box input {
+            width: 100%;
+            padding: 14px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            border-radius: 15px;
+            color: white;
+            font-size: 16px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .login-box input:focus {
+            border-color: #ff004f;
+            outline: none;
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(45deg, #ff004f, #ff6b6b);
+            border: none;
+            border-radius: 30px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .login-error {
+            color: #ff004f;
+            font-size: 12px;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .main-app {
+            display: none;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .header h1 {
+            background: linear-gradient(45deg, #ff004f, #00f2fe);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-size: 28px;
+        }
+        
+        .stats-card {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 22px;
+            font-weight: bold;
+            color: #ff004f;
+        }
+        
+        .stat-label {
+            font-size: 10px;
+            color: #888;
+        }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .menu-item {
+            background: rgba(20, 20, 40, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .menu-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 0, 79, 0.4), transparent);
+            transition: 0.5s;
+        }
+        
+        .menu-item:hover::before {
+            left: 100%;
+        }
+        
+        .menu-item:active {
+            transform: scale(0.96);
+        }
+        
+        .menu-icon { font-size: 28px; }
+        .menu-title { color: white; font-size: 13px; font-weight: 500; }
+        .menu-desc { color: #888; font-size: 10px; }
+        
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #222;
+        }
+        
+        .toggle-label { color: #ddd; font-size: 14px; }
+        
+        .toggle-switch {
+            width: 50px;
+            height: 24px;
+            background: #333;
+            border-radius: 30px;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .toggle-switch.active { background: #ff004f; }
+        
+        .toggle-switch::before {
+            content: "";
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 3px;
+            transition: 0.2s;
+        }
+        
+        .toggle-switch.active::before { left: 27px; }
+        
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 30px;
+            padding: 5px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            color: #aaa;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+        
+        .tab.active {
+            background: #ff004f;
+            color: white;
+        }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .slider-row { margin: 15px 0; }
+        .slider-row label { display: block; color: #ddd; font-size: 13px; margin-bottom: 8px; }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #333;
+            border-radius: 5px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            width: 16px;
+            height: 16px;
+            background: #ff004f;
+            border-radius: 50%;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+        
+        .btn-boost {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(45deg, #ff004f, #ff6b6b);
+            border: none;
+            border-radius: 30px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        
+        .log-area {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            padding: 12px;
+            height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
+            margin-top: 15px;
+        }
+        
+        .log-item { padding: 4px 0; color: #0f0; border-bottom: 1px solid #222; }
+        
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: #0f0;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            z-index: 2001;
+            animation: fadeOut 2s ease forwards;
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; visibility: hidden; }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="sakuraCanvas"></canvas>
+<div class="laser-scan"></div>
+
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+        <h1>⚡ QK-TOOL ⚡</h1>
+        <p style="color:#aaa; margin-bottom:20px;">🌸 Nhập key để kích hoạt 🌸</p>
+        <input type="text" id="keyInput" placeholder="Nhập key...">
+        <button class="login-btn" onclick="checkKey()">🔓 KÍCH HOẠT</button>
+        <div class="login-error" id="loginError">Sai key! Vui lòng thử lại.</div>
+    </div>
+</div>
+
+<div class="main-app" id="mainApp">
+    <div class="header">
+        <h1>⚡ QK-TOOL ⚡</h1>
+        <p>🌸 Laser Scan | Sakura Edition 🌸</p>
+    </div>
+    
+    <div class="stats-card">
+        <div class="stat"><div class="stat-value" id="fps">0</div><div class="stat-label">FPS</div></div>
+        <div class="stat"><div class="stat-value" id="ping">0</div><div class="stat-label">PING (ms)</div></div>
+        <div class="stat"><div class="stat-value" id="ram">0</div><div class="stat-label">RAM (MB)</div></div>
+        <div class="stat"><div class="stat-value" id="temp">0°</div><div class="stat-label">TEMP</div></div>
+    </div>
+    
+    <div class="tabs">
+        <button class="tab active" data-tab="main">🎮 CHÍNH</button>
+        <button class="tab" data-tab="aim">🎯 AIM/KÉO</button>
+        <button class="tab" data-tab="charge">⚡ SẠC PIN</button>
+        <button class="tab" data-tab="info">ℹ️ INFO</button>
+    </div>
+    
+    <div id="tab-main" class="tab-content active">
+        <div class="menu-grid">
+            <div class="menu-item" onclick="callJava('cleanRAM')"><div class="menu-icon">🗑️</div><div class="menu-title">DỌN RAM</div></div>
+            <div class="menu-item" onclick="callJava('killApps')"><div class="menu-icon">🔪</div><div class="menu-title">TẮT APP NỀN</div></div>
+            <div class="menu-item" onclick="callJava('boostCPU')"><div class="menu-icon">⚡</div><div class="menu-title">CPU BOOST</div></div>
+            <div class="menu-item" onclick="callJava('blockNotif')"><div class="menu-icon">🔕</div><div class="menu-title">CHẶN THÔNG BÁO</div></div>
+            <div class="menu-item" onclick="callJava('oneTapBoost')"><div class="menu-icon">🚀</div><div class="menu-title">ONE TAP BOOST</div></div>
+            <div class="menu-item" onclick="callJava('networkBoost')"><div class="menu-icon">🌐</div><div class="menu-title">TỐI ƯU MẠNG</div></div>
+        </div>
+        <div class="toggle-row"><span class="toggle-label">🎯 Chế độ game</span><div class="toggle-switch" id="gameModeToggle" onclick="toggleGameMode()"></div></div>
+        <button class="btn-boost" onclick="callJava('oneTapBoost')">🚀 ONE TAP BOOST</button>
+    </div>
+    
+    <div id="tab-aim" class="tab-content">
+        <div class="menu-grid">
+            <div class="menu-item" onclick="callJava('startAimAssist')"><div class="menu-icon">🎯</div><div class="menu-title">BẬT AIM ASSIST</div></div>
+            <div class="menu-item" onclick="callJava('stopAimAssist')"><div class="menu-icon">❌</div><div class="menu-title">TẮT AIM</div></div>
+            <div class="menu-item" onclick="callJava('increaseSensitivity')"><div class="menu-icon">📈</div><div class="menu-title">TĂNG ĐỘ NHẠY</div></div>
+            <div class="menu-item" onclick="callJava('resetSensitivity')"><div class="menu-icon">🔄</div><div class="menu-title">RESET NHẠY</div></div>
+        </div>
+        <div class="slider-row"><label>🎯 Độ nhạy pointer (1-10)</label><input type="range" id="pointerSlider" min="1" max="10" value="5" onchange="changePointer()"></div>
+    </div>
+    
+    <div id="tab-charge" class="tab-content">
+        <div class="menu-grid">
+            <div class="menu-item" onclick="callJava('enableFastCharge')"><div class="menu-icon">⚡</div><div class="menu-title">BẬT SẠC NHANH</div></div>
+            <div class="menu-item" onclick="callJava('disableFastCharge')"><div class="menu-icon">🔋</div><div class="menu-title">TẮT SẠC NHANH</div></div>
+        </div>
+    </div>
+    
+    <div id="tab-info" class="tab-content">
+        <div class="menu-grid">
+            <div class="menu-item" onclick="callJava('getInfo')"><div class="menu-icon">📱</div><div class="menu-title">THÔNG TIN MÁY</div></div>
+            <div class="menu-item" onclick="callJava('testSpeed')"><div class="menu-icon">📶</div><div class="menu-title">TEST TỐC ĐỘ</div></div>
+        </div>
+        <div class="log-area" id="logArea">
+            <div class="log-item">[✓] QK-Tool Laser Edition đã sẵn sàng</div>
+            <div class="log-item">🌸 Hoa anh đào 3D đã được kích hoạt</div>
+            <div class="log-item">⚡ Laser scan đang quét menu</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // CHÚ THÍCH: HOA ANH ĐÀO
+    const canvas = document.getElementById('sakuraCanvas');
+    const ctx = canvas.getContext('2d');
+    let petals = [];
+    const PETAL_COUNT = 60;
+    
+    class Petal {
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height - canvas.height;
+            this.size = Math.random() * 8 + 5;
+            this.speedX = Math.random() * 1 - 0.5;
+            this.speedY = Math.random() * 2 + 1;
+            this.rot = Math.random() * Math.PI * 2;
+            this.rotSpeed = Math.random() * 0.05 - 0.025;
+            this.opacity = Math.random() * 0.5 + 0.3;
+        }
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+            this.rot += this.rotSpeed;
+            if (this.y > canvas.height || this.x < -50 || this.x > canvas.width + 50) {
+                this.x = Math.random() * canvas.width;
+                this.y = -20;
+            }
+        }
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.rot);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(this.size / 2, -this.size / 2, this.size, 0);
+            ctx.quadraticCurveTo(this.size / 2, this.size / 2, 0, 0);
+            ctx.fillStyle = `rgba(255, 160, 180, ${this.opacity})`;
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+    
+    function initPetals() {
+        for (let i = 0; i < PETAL_COUNT; i++) petals.push(new Petal());
+    }
+    
+    function animatePetals() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let p of petals) { p.update(); p.draw(); }
+        requestAnimationFrame(animatePetals);
+    }
+    
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        petals = [];
+        initPetals();
+    }
+    
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    initPetals();
+    animatePetals();
+    
+    // CHÚ THÍCH: KEY
+    const VALID_KEY = "QK-Tool0000000";
+    
+    function checkKey() {
+        const key = document.getElementById('keyInput').value;
+        if (key === VALID_KEY) {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            showToast('✅ Đăng nhập thành công! 🌸');
+            startMonitoring();
+        } else {
+            document.getElementById('loginError').style.display = 'block';
+            showToast('❌ Sai key!', true);
+        }
+    }
+    
+    function showToast(msg, isError) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.style.color = isError ? '#ff004f' : '#0f0';
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    }
+    
+    function addLog(msg) {
+        const logArea = document.getElementById('logArea');
+        const div = document.createElement('div');
+        div.className = 'log-item';
+        div.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        logArea.appendChild(div);
+        div.scrollIntoView({ behavior: 'smooth' });
+        showToast(msg);
+    }
+    
+    function callJava(method, param) {
+        if (window.Sketchware && window.Sketchware[method]) {
+            if (param) window.Sketchware[method](param);
+            else window.Sketchware[method]();
+            addLog(`📞 Gọi: ${method}`);
+        } else {
+            addLog(`⚠️ Chưa kết nối Java: ${method}`);
+        }
+    }
+    
+    function changePointer() {
+        const val = document.getElementById('pointerSlider').value;
+        addLog(`🎮 Đã set pointer speed: ${val}`);
+        callJava('increaseSensitivity');
+    }
+    
+    function toggleGameMode() {
+        const toggle = document.getElementById('gameModeToggle');
+        toggle.classList.toggle('active');
+        callJava('enableGameMode');
+        addLog(toggle.classList.contains('active') ? '🎮 Đã bật chế độ game' : '🎮 Đã tắt chế độ game');
+    }
+    
+    function updateStatsFromJava(fps, ram, temp) {
+        document.getElementById('fps').innerText = fps;
+        document.getElementById('ram').innerText = ram;
+        document.getElementById('temp').innerText = temp + '°';
+    }
+    
+    function updatePingFromJava(ping) {
+        document.getElementById('ping').innerText = ping;
+    }
+    
+    function startMonitoring() {
+        setInterval(() => {
+            const fps = Math.floor(Math.random() * 40 + 30);
+            const ram = Math.floor(Math.random() * 700 + 800);
+            const temp = Math.floor(Math.random() * 20 + 35);
+            updateStatsFromJava(fps, ram, temp);
+            const ping = Math.floor(Math.random() * 80 + 20);
+            updatePingFromJava(ping);
+        }, 2000);
+    }
+    
+    // CHÚ THÍCH: TAB - ĐÃ SỬA LỖI
+    document.querySelectorAll('.tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.tab').forEach(function(t) {
+                t.classList.remove('active');
+            });
+            tab.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(function(c) {
+                c.classList.remove('active');
+            });
+            var targetId = 'tab-' + tab.getAttribute('data-tab');
+            document.getElementById(targetId).classList.add('active');
+        });
+    });
+    
+    addLog('🌸 QK-TOOL LASER EDITION đã sẵn sàng 🌸');
+</script>
+
+</body>
+      </html>
